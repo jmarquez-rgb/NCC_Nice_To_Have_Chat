@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NCC Chat Widget - Patient Self-Service Portal (Interactive Vision Demo)</title>
+<script src="https://unpkg.com/adaptivecards@3.0.2/dist/adaptivecards.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;background:linear-gradient(135deg,#F0F7FA 0%,#E6F0F5 100%);color:#1F2937;font-size:14px;line-height:1.5;min-height:100vh;padding:20px}
+  .demo-banner{max-width:1200px;margin:0 auto 12px;background:linear-gradient(90deg,#FF6B35 0%,#FF8C42 100%);color:white;padding:12px 20px;font-size:12px;font-weight:600;letter-spacing:0.3px;display:flex;align-items:center;justify-content:space-between;border-radius:10px}
+  .demo-banner .vision-pill{background:rgba(255,255,255,0.22);padding:4px 12px;border-radius:12px;font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+  .control-bar{max-width:1200px;margin:0 auto 20px;background:white;padding:10px 18px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;align-items:center;gap:16px;border:1px solid #E5E7EB}
+  .step-pill{background:linear-gradient(135deg,#0B5394 0%,#1976D2 100%);color:white;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.5px;font-family:monospace}
+  .step-label{font-size:12px;color:#374151;font-weight:600;flex:1}
+  .step-label b{color:#0B5394}
+  .control-bar button{background:white;border:1.5px solid #0B5394;color:#0B5394;padding:6px 14px;border-radius:16px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:5px}
+  .control-bar button:hover{background:#0B5394;color:white}
+  .stage{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 420px;gap:30px;align-items:start}
+
+  .browser-mock{background:white;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,0.08);overflow:hidden;border:1px solid #E5E7EB}
+  .browser-bar{background:#F3F4F6;padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #E5E7EB}
+  .browser-dots{display:flex;gap:6px}
+  .browser-dots span{width:11px;height:11px;border-radius:50%}
+  .browser-dots span:nth-child(1){background:#FF5F57}
+  .browser-dots span:nth-child(2){background:#FFBD2E}
+  .browser-dots span:nth-child(3){background:#28C940}
+  .browser-url{flex:1;background:white;border-radius:6px;padding:6px 12px;font-size:12px;color:#6B7280;font-family:monospace}
+  .browser-content{height:700px;background:linear-gradient(180deg,#FAFAFA 0%,#F0F0F0 100%);display:flex;align-items:center;justify-content:center;color:#9CA3AF;font-size:48px;font-weight:300;letter-spacing:-1px;flex-direction:column;gap:8px}
+  .browser-content .heart{font-size:72px}
+  .browser-content .label{font-weight:700;color:#D1D5DB;font-size:32px;letter-spacing:1px}
+
+  .widget{background:white;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.12);overflow:hidden;border:1px solid #E5E7EB;display:flex;flex-direction:column;height:780px;max-height:90vh;font-family:'Inter','IBM Plex Sans',sans-serif}
+  .widget-header{background:linear-gradient(135deg,#0B5394 0%,#1976D2 100%);color:white;padding:16px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+  .widget-avatar{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:18px;backdrop-filter:blur(10px)}
+  .widget-titlewrap{flex:1;min-width:0}
+  .widget-title{font-size:14px;font-weight:700;letter-spacing:0.1px;display:flex;align-items:center;gap:6px}
+  .widget-status{font-size:11px;opacity:0.85;display:flex;align-items:center;gap:5px;margin-top:2px}
+  .widget-status .dot{width:7px;height:7px;border-radius:50%;background:#10B981;animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+  .widget-actions{display:flex;gap:8px}
+  .widget-actions button{background:rgba(255,255,255,0.15);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;transition:background 0.15s}
+  .widget-actions button:hover{background:rgba(255,255,255,0.28)}
+
+  .hipaa-strip{background:#FFF8E0;border-bottom:1px solid #F3E5AB;padding:6px 14px;display:flex;align-items:center;gap:6px;font-size:10px;color:#7C4A00;font-weight:600;flex-shrink:0}
+  .hipaa-strip .lock{font-size:11px}
+
+  .widget-body{flex:1;overflow-y:auto;padding:18px 16px;background:linear-gradient(180deg,#FAFBFC 0%,#FFFFFF 100%);display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+  .widget-body::-webkit-scrollbar{width:6px}
+  .widget-body::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:3px}
+
+  /* Welcome panel (step 0) */
+  .welcome-panel{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 18px;animation:slideIn 0.35s ease-out}
+  .welcome-icon{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#0B5394 0%,#1976D2 100%);color:white;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:14px;box-shadow:0 4px 12px rgba(11,83,148,0.25)}
+  .welcome-title{font-size:18px;font-weight:700;color:#0B5394;margin-bottom:4px}
+  .welcome-sub{font-size:12px;color:#6B7280;margin-bottom:22px}
+  .welcome-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+  .welcome-card{background:white;border:1.5px solid #E5E7EB;border-radius:12px;padding:14px 12px;cursor:pointer;transition:all 0.18s;text-align:left;display:flex;flex-direction:column;gap:6px}
+  .welcome-card:hover{border-color:#1976D2;transform:translateY(-2px);box-shadow:0 6px 16px rgba(11,83,148,0.12)}
+  .welcome-card.full{grid-column:1 / -1}
+  .welcome-card .icon{font-size:24px}
+  .welcome-card .name{font-size:13px;font-weight:700;color:#1F2937}
+  .welcome-card .desc{font-size:10.5px;color:#6B7280;line-height:1.35}
+
+  /* Messages */
+  .msg{display:flex;gap:8px;animation:slideIn 0.3s ease-out}
+  @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .msg.bot{align-items:flex-end}
+  .msg.user{justify-content:flex-end}
+  .msg-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0B5394 0%,#1976D2 100%);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-bottom:2px}
+  .msg-bubble{max-width:78%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.45}
+  .msg.bot .msg-bubble{background:#F3F4F6;color:#1F2937;border-bottom-left-radius:4px}
+  .msg.user .msg-bubble{background:linear-gradient(135deg,#0B5394 0%,#1976D2 100%);color:white;border-bottom-right-radius:4px}
+
+  /* Typing indicator */
+  .typing{display:flex;gap:8px;align-items:flex-end;animation:slideIn 0.2s ease-out}
+  .typing-dots{background:#F3F4F6;padding:12px 14px;border-radius:16px;border-bottom-left-radius:4px;display:flex;gap:4px}
+  .typing-dots span{width:6px;height:6px;border-radius:50%;background:#9CA3AF;animation:bounce 1.2s ease-in-out infinite}
+  .typing-dots span:nth-child(2){animation-delay:0.15s}
+  .typing-dots span:nth-child(3){animation-delay:0.3s}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-5px);opacity:1}}
+
+  .ac-msg{display:flex;gap:8px;align-items:flex-end}
+  .ac-card-wrap{max-width:340px;flex:1}
+  .ac-card-wrap > div{border-radius:14px !important;overflow:hidden;border:1px solid #E5E7EB;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+
+  /* Quick replies */
+  .quick-replies{display:flex;gap:6px;flex-wrap:wrap;margin-left:36px;animation:slideIn 0.3s ease-out}
+  .quick-replies button{background:white;border:1.5px solid #0B5394;color:#0B5394;padding:7px 14px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s}
+  .quick-replies button:hover{background:#0B5394;color:white;transform:translateY(-1px)}
+  .quick-replies button.outline{border-color:#9CA3AF;color:#6B7280}
+  .quick-replies button.outline:hover{background:#6B7280;color:white;border-color:#6B7280}
+
+  /* Composer */
+  .widget-composer{flex-shrink:0;padding:12px 14px;background:white;border-top:1px solid #E5E7EB;display:flex;gap:8px;align-items:center}
+  .widget-composer input{flex:1;padding:10px 14px;border:1.5px solid #E5E7EB;border-radius:22px;font-size:13px;font-family:inherit;outline:none;transition:border-color 0.15s;color:#9CA3AF;cursor:not-allowed}
+  .composer-send{width:38px;height:38px;background:#E5E7EB;border:none;border-radius:50%;color:#9CA3AF;cursor:not-allowed;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .composer-icon{background:none;border:none;color:#9CA3AF;cursor:not-allowed;font-size:18px;padding:4px}
+  .composer-hint{text-align:center;font-size:10px;color:#9CA3AF;padding:4px 12px;background:#FAFBFC;font-family:monospace;letter-spacing:0.4px}
+
+  .stage-label{grid-column:1 / -1;display:flex;justify-content:space-around;margin-top:6px;font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.8px}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+  <span>NCC CHAT WIDGET  |  PATIENT SELF-SERVICE PORTAL  |  Interactive Click-Through Demo</span>
+  <span class="vision-pill">PRODUCT VISION</span>
+</div>
+
+<div class="control-bar">
+  <span class="step-pill" id="step-pill">STEP 0 / 10</span>
+  <span class="step-label" id="step-label">Empty widget · Patient just opened the portal</span>
+  <button onclick="restartDemo()">↻ Restart Demo</button>
+</div>
+
+<div class="stage">
+
+  <div class="browser-mock">
+    <div class="browser-bar">
+      <div class="browser-dots"><span></span><span></span><span></span></div>
+      <div class="browser-url">🔒 portal.regionalhealthsystem.org/mychart</div>
+    </div>
+    <div class="browser-content">
+      <div class="heart">❤️</div>
+      <div class="label">REGIONAL HEALTH</div>
+    </div>
+  </div>
+
+  <div class="widget">
+    <div class="widget-header">
+      <div class="widget-avatar">❤️</div>
+      <div class="widget-titlewrap">
+        <div class="widget-title">CareConnect <span style="background:rgba(255,255,255,0.18);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;letter-spacing:0.5px">AI</span></div>
+        <div class="widget-status"><span class="dot"></span>Patient services · Avg reply 4s</div>
+      </div>
+      <div class="widget-actions">
+        <button title="Minimize">−</button>
+        <button title="Close">×</button>
+      </div>
+    </div>
+
+    <div class="hipaa-strip">
+      <span class="lock">🔒</span>
+      <span>HIPAA-secure conversation · Session encrypted · Signed in as Marie R.</span>
+    </div>
+
+    <div class="widget-body" id="chat-body"></div>
+
+    <div class="composer-hint">Demo mode · click to advance · typing disabled</div>
+    <div class="widget-composer">
+      <button class="composer-icon" title="Attach (disabled)">📎</button>
+      <input type="text" placeholder="Type a message..." disabled>
+      <button class="composer-icon" title="Voice (disabled)">🎤</button>
+      <button class="composer-send" title="Send (disabled)">➤</button>
+    </div>
+  </div>
+
+  <div class="stage-label">
+    <span>← Patient portal</span>
+    <span>Embedded NCC widget →</span>
+  </div>
+</div>
+
+<script>
+// =================== STATE ===================
+let currentStep = 0;
+const stepLabels = {
+  0: "Empty widget · Patient just opened the portal",
+  1: "Welcome screen · 5 self-service options shown",
+  2: "Patient picked appointments · Identity check",
+  3: "Identity verified · Care summary loaded",
+  4: "Action menu · Patient choosing what to do",
+  5: "Appointment slot picker shown",
+  6: "Slot picked · Wellness check displayed",
+  7: "Wellness complete · Reviewing summary",
+  8: "Confirmed · Success screen",
+  9: "Optional: nurse handoff escalation path",
+  10: "Final state · Demo complete"
+};
+
+function setStep(n) {
+  currentStep = n;
+  document.getElementById('step-pill').textContent = `STEP ${n} / 10`;
+  document.getElementById('step-label').innerHTML = stepLabels[n];
+}
+
+const body = document.getElementById('chat-body');
+
+function clearBody() {
+  body.innerHTML = '';
+}
+
+function scrollDown() {
+  setTimeout(() => { body.scrollTop = body.scrollHeight; }, 50);
+}
+
+// =================== RENDERERS ===================
+function botMsg(text) {
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.innerHTML = `<div class="msg-avatar">❤️</div><div class="msg-bubble">${text}</div>`;
+  body.appendChild(div);
+  scrollDown();
+}
+
+function userMsg(text) {
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `<div class="msg-bubble">${text}</div>`;
+  body.appendChild(div);
+  scrollDown();
+}
+
+function quickReplies(options) {
+  const div = document.createElement('div');
+  div.className = 'quick-replies';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    if (opt.outline) btn.className = 'outline';
+    btn.textContent = opt.label;
+    btn.onclick = opt.onClick;
+    div.appendChild(btn);
+  });
+  body.appendChild(div);
+  scrollDown();
+  return div;
+}
+
+function showTyping(durationMs = 900) {
+  return new Promise(resolve => {
+    const div = document.createElement('div');
+    div.className = 'typing';
+    div.innerHTML = `<div class="msg-avatar">❤️</div><div class="typing-dots"><span></span><span></span><span></span></div>`;
+    body.appendChild(div);
+    scrollDown();
+    setTimeout(() => {
+      div.remove();
+      resolve();
+    }, durationMs);
+  });
+}
+
+// =================== ADAPTIVE CARDS ===================
+const hostConfig = {
+  "fontFamily":"'Inter', 'IBM Plex Sans', sans-serif",
+  "containerStyles":{
+    "default":{"backgroundColor":"#FFFFFF","foregroundColors":{
+      "default":{"default":"#1F2937","subtle":"#6B7280"},
+      "accent":{"default":"#0B5394"},
+      "good":{"default":"#10B981"},
+      "warning":{"default":"#F59E0B"},
+      "attention":{"default":"#DC2626"}
+    }},
+    "emphasis":{"backgroundColor":"#F0F7FA","foregroundColors":{
+      "default":{"default":"#1F2937","subtle":"#6B7280"},
+      "accent":{"default":"#0B5394"}
+    }},
+    "good":{"backgroundColor":"#ECFDF5","foregroundColors":{
+      "default":{"default":"#065F46","subtle":"#10B981"}
+    }}
+  },
+  "spacing":{"small":4,"default":8,"medium":12,"large":16,"extraLarge":20,"padding":14},
+  "actions":{"buttonSpacing":8,"actionAlignment":"stretch","actionsOrientation":"horizontal"}
+};
+
+function renderCard(cardJson, onSubmit) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ac-msg';
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = '❤️';
+  const cardHolder = document.createElement('div');
+  cardHolder.className = 'ac-card-wrap';
+  const inner = document.createElement('div');
+  cardHolder.appendChild(inner);
+  wrap.appendChild(avatar);
+  wrap.appendChild(cardHolder);
+  body.appendChild(wrap);
+
+  const ac = new AdaptiveCards.AdaptiveCard();
+  ac.hostConfig = new AdaptiveCards.HostConfig(hostConfig);
+  ac.onExecuteAction = function(action) {
+    if (action instanceof AdaptiveCards.SubmitAction) {
+      const data = action.data || {};
+      // Capture all input values from the rendered card
+      const inputs = ac.getAllInputs();
+      inputs.forEach(input => {
+        data[input.id] = input.value;
+      });
+      if (onSubmit) onSubmit(data);
+    }
+  };
+  ac.parse(cardJson);
+  inner.appendChild(ac.render());
+  scrollDown();
+}
+
+// =================== STEPS ===================
+function step0_welcome() {
+  clearBody();
+  setStep(0);
+  const welcome = document.createElement('div');
+  welcome.className = 'welcome-panel';
+  welcome.innerHTML = `
+    <div class="welcome-icon">❤️</div>
+    <div class="welcome-title">Welcome back, Marie</div>
+    <div class="welcome-sub">How can CareConnect help today?</div>
+    <div class="welcome-grid">
+      <div class="welcome-card" onclick="step1_picked_appointment()">
+        <div class="icon">📅</div>
+        <div class="name">Appointments</div>
+        <div class="desc">Schedule, change, or confirm a visit</div>
+      </div>
+      <div class="welcome-card" onclick="step1_picked_other('refill','Refill a prescription')">
+        <div class="icon">💊</div>
+        <div class="name">Prescriptions</div>
+        <div class="desc">Refill, status, or pharmacy</div>
+      </div>
+      <div class="welcome-card" onclick="step1_picked_other('results','See test results')">
+        <div class="icon">🧪</div>
+        <div class="name">Test Results</div>
+        <div class="desc">Recent labs and imaging</div>
+      </div>
+      <div class="welcome-card" onclick="step1_picked_other('billing','Billing question')">
+        <div class="icon">🧾</div>
+        <div class="name">Billing</div>
+        <div class="desc">Statements and payment plans</div>
+      </div>
+      <div class="welcome-card full" onclick="step9_nurse_handoff()">
+        <div class="icon">👩‍⚕️</div>
+        <div class="name">Talk to a nurse</div>
+        <div class="desc">Average wait: 4 minutes · Live transfer</div>
+      </div>
+    </div>
+  `;
+  body.appendChild(welcome);
+  scrollDown();
+}
+
+async function step1_picked_appointment() {
+  setStep(1);
+  clearBody();
+  botMsg("Hi Marie! 👋 I'm CareConnect. I can help you with appointments. To pull up your record, can I confirm it's you?");
+  await showTyping(700);
+  botMsg("I see <b>Marie Robichaux</b>, DOB <b>03/14/1962</b>. Is that you?");
+  quickReplies([
+    {label: "✓ Yes, that's me", onClick: step2_verified},
+    {label: "Not me", outline: true, onClick: () => alert("(Demo) Would route to identity recovery flow")}
+  ]);
+}
+
+async function step1_picked_other(topic, label) {
+  setStep(1);
+  clearBody();
+  botMsg(`Hi Marie! 👋 I'm CareConnect. Happy to help with <b>${label}</b>.`);
+  await showTyping(600);
+  botMsg("This demo focuses on the appointments path. Restart and pick <b>Appointments</b> to see the full flow.");
+  quickReplies([
+    {label: "↻ Restart demo", onClick: restartDemo}
+  ]);
+}
+
+async function step2_verified() {
+  setStep(2);
+  userMsg("Yes, that's me");
+  await showTyping(900);
+  botMsg("Great — pulling up your record now...");
+  await showTyping(1100);
+  setStep(3);
+  botMsg("Here's what I have on your recent cardiology visit:");
+  await showTyping(400);
+  renderCard(summaryCard, null);
+  await new Promise(r => setTimeout(r, 600));
+  botMsg("What would you like to do?");
+  await showTyping(300);
+  setStep(4);
+  renderCard(actionsCard, (data) => {
+    if (data.action === 'schedule') step5_show_slots();
+    else if (data.action === 'nurse') step9_nurse_handoff();
+    else step1_picked_other(data.action, "that");
+  });
+}
+
+async function step5_show_slots() {
+  setStep(5);
+  userMsg("Schedule the follow-up");
+  await showTyping(800);
+  botMsg("Dr. Patel recommended a 6-week follow-up. Here are the next available times:");
+  await showTyping(400);
+  renderCard(apptsCard, (data) => {
+    if (!data.appt_slot) {
+      botMsg("Please pick a time to continue.");
+      return;
+    }
+    step6_show_wellness(data);
+  });
+}
+
+async function step6_show_wellness(slotData) {
+  setStep(6);
+  const slotLabel = {
+    "2027-01-14T09:30": "Wed Jan 14 · 9:30 AM",
+    "2027-01-15T14:15": "Thu Jan 15 · 2:15 PM",
+    "2027-01-20T11:00": "Tue Jan 20 · 11:00 AM",
+    "2027-01-21T08:00": "Wed Jan 21 · 8:00 AM"
+  }[slotData.appt_slot] || slotData.appt_slot;
+  const telehealthNote = slotData.telehealth === 'true' ? " (telehealth)" : "";
+  const remindNote = slotData.reminder === 'true' ? " with SMS reminder" : "";
+  userMsg(`${slotLabel}${telehealthNote}${remindNote}`);
+  window._slotChoice = {slotLabel, telehealthNote, remindNote};
+  await showTyping(900);
+  botMsg("Great choice. One quick wellness check before I confirm — Dr. Patel asked us to check in on how you're feeling:");
+  await showTyping(400);
+  renderCard(wellnessCard, (data) => {
+    if (!data.chest_pain || !data.med_adherence) {
+      botMsg("Please answer the required questions to continue.");
+      return;
+    }
+    if (data.chest_pain === 'severe') {
+      step9_nurse_handoff(true);
+      return;
+    }
+    step7_review(data);
+  });
+}
+
+async function step7_review(wellnessData) {
+  setStep(7);
+  const cpLabel = {none:"None", mild:"Mild", moderate:"Moderate", severe:"Severe"}[wellnessData.chest_pain];
+  const adhLabel = {yes:"Yes, every day", partial:"Missed a few doses", no:"Stopped one or more"}[wellnessData.med_adherence];
+  userMsg(`Chest pain: ${cpLabel} · Meds: ${adhLabel}`);
+  await showTyping(900);
+  botMsg("Got it. Here's the summary — confirm to book:");
+  await showTyping(400);
+  renderCard(buildReviewCard(wellnessData), (data) => {
+    if (data.action === 'confirm') step8_confirmed();
+    else if (data.action === 'edit') step5_show_slots();
+  });
+}
+
+async function step8_confirmed() {
+  setStep(8);
+  userMsg("Confirm appointment");
+  await showTyping(1100);
+  botMsg("You're all set, Marie! 🎉");
+  await showTyping(400);
+  renderCard(confirmedCard, null);
+  await new Promise(r => setTimeout(r, 600));
+  botMsg("Anything else I can help with?");
+  quickReplies([
+    {label: "All done, thanks!", onClick: step10_done},
+    {label: "Talk to a nurse", onClick: () => step9_nurse_handoff()}
+  ]);
+}
+
+async function step9_nurse_handoff(severe = false) {
+  setStep(9);
+  if (severe) {
+    userMsg("Chest pain: Severe");
+    await showTyping(700);
+    botMsg("⚠️ Thank you for telling me. Severe chest pain needs immediate attention. <b>If this is an emergency, call 911 now.</b> I'm also connecting you to a nurse right away.");
+  } else {
+    userMsg("Talk to a nurse");
+    await showTyping(700);
+    botMsg("No problem — connecting you with our nurse line. Sharing your context so you don't have to repeat anything.");
+  }
+  await showTyping(1200);
+  botMsg("Connecting to <b>Sarah, RN</b> · Cardiology nurse line...");
+  await showTyping(1500);
+  botMsg("<b>Sarah, RN:</b> Hi Marie, I have your record open and I see your visit history with Dr. Patel. How can I help?");
+  quickReplies([
+    {label: "End demo", onClick: step10_done}
+  ]);
+}
+
+async function step10_done() {
+  setStep(10);
+  userMsg("All done, thanks!");
+  await showTyping(700);
+  botMsg("Take care, Marie. We'll see you on " + (window._slotChoice ? `<b>${window._slotChoice.slotLabel}</b>` : "your scheduled visit") + ". 💙");
+  quickReplies([
+    {label: "↻ Restart demo", onClick: restartDemo}
+  ]);
+}
+
+function restartDemo() {
+  window._slotChoice = null;
+  step0_welcome();
+}
+
+// =================== CARD JSON ===================
+const summaryCard = {
+  "type":"AdaptiveCard","$schema":"http://adaptivecards.io/schemas/adaptive-card.json","version":"1.5",
+  "body":[
+    {"type":"Container","style":"emphasis","bleed":true,"items":[
+      {"type":"ColumnSet","columns":[
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"❤️","size":"ExtraLarge","spacing":"None"}]},
+        {"type":"Column","width":"stretch","items":[
+          {"type":"TextBlock","text":"Cardiology · Dr. Patel","weight":"Bolder","size":"Medium","color":"Accent","spacing":"None"},
+          {"type":"TextBlock","text":"Last visit: Nov 28, 2026","isSubtle":true,"size":"Small","spacing":"None"}
+        ]}
+      ]}
+    ]},
+    {"type":"FactSet","facts":[
+      {"title":"Reason","value":"Recurring chest pain"},
+      {"title":"Outcome","value":"Same-day triage · Resolved"},
+      {"title":"Plan","value":"6-week follow-up + EKG"},
+      {"title":"Medications","value":"3 active · No changes"}
+    ]},
+    {"type":"Container","style":"good","items":[
+      {"type":"TextBlock","text":"**Recommended next steps:** Schedule 6-week follow-up · Order home BP monitor","size":"Small","wrap":true}
+    ]}
+  ]
+};
+
+const actionsCard = {
+  "type":"AdaptiveCard","$schema":"http://adaptivecards.io/schemas/adaptive-card.json","version":"1.5",
+  "body":[
+    {"type":"Container","selectAction":{"type":"Action.Submit","data":{"action":"schedule"}},"items":[
+      {"type":"ColumnSet","columns":[
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"📅","size":"Large"}]},
+        {"type":"Column","width":"stretch","items":[
+          {"type":"TextBlock","text":"**Schedule Follow-Up**","spacing":"None"},
+          {"type":"TextBlock","text":"6-week cardiology visit","isSubtle":true,"size":"Small","spacing":"None"}
+        ]},
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"›","size":"ExtraLarge","color":"Accent"}]}
+      ]}
+    ]},
+    {"type":"Container","separator":true,"selectAction":{"type":"Action.Submit","data":{"action":"results"}},"items":[
+      {"type":"ColumnSet","columns":[
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"🧪","size":"Large"}]},
+        {"type":"Column","width":"stretch","items":[
+          {"type":"TextBlock","text":"**View Test Results**","spacing":"None"},
+          {"type":"TextBlock","text":"Lipid panel · Available","isSubtle":true,"size":"Small","spacing":"None"}
+        ]},
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"›","size":"ExtraLarge","color":"Accent"}]}
+      ]}
+    ]},
+    {"type":"Container","separator":true,"selectAction":{"type":"Action.Submit","data":{"action":"refill"}},"items":[
+      {"type":"ColumnSet","columns":[
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"💊","size":"Large"}]},
+        {"type":"Column","width":"stretch","items":[
+          {"type":"TextBlock","text":"**Refill Prescription**","spacing":"None"},
+          {"type":"TextBlock","text":"Metoprolol · 2 refills remaining","isSubtle":true,"size":"Small","spacing":"None"}
+        ]},
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"›","size":"ExtraLarge","color":"Accent"}]}
+      ]}
+    ]},
+    {"type":"Container","separator":true,"selectAction":{"type":"Action.Submit","data":{"action":"nurse"}},"items":[
+      {"type":"ColumnSet","columns":[
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"👩‍⚕️","size":"Large"}]},
+        {"type":"Column","width":"stretch","items":[
+          {"type":"TextBlock","text":"**Talk to a Nurse**","spacing":"None"},
+          {"type":"TextBlock","text":"Avg wait: 4 min","isSubtle":true,"size":"Small","color":"Good","spacing":"None"}
+        ]},
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"›","size":"ExtraLarge","color":"Accent"}]}
+      ]}
+    ]}
+  ]
+};
+
+const apptsCard = {
+  "type":"AdaptiveCard","$schema":"http://adaptivecards.io/schemas/adaptive-card.json","version":"1.5",
+  "body":[
+    {"type":"Container","style":"emphasis","bleed":true,"items":[
+      {"type":"TextBlock","text":"Available Appointments","weight":"Bolder","size":"Medium","color":"Accent"},
+      {"type":"TextBlock","text":"Dr. Patel · Baton Rouge - Bluebonnet","isSubtle":true,"size":"Small","spacing":"None"}
+    ]},
+    {"type":"Input.ChoiceSet","id":"appt_slot","isRequired":true,"errorMessage":"Please pick a time","style":"expanded","value":"2027-01-14T09:30","choices":[
+      {"title":"Wed, Jan 14 · 9:30 AM","value":"2027-01-14T09:30"},
+      {"title":"Thu, Jan 15 · 2:15 PM","value":"2027-01-15T14:15"},
+      {"title":"Tue, Jan 20 · 11:00 AM","value":"2027-01-20T11:00"},
+      {"title":"Wed, Jan 21 · 8:00 AM","value":"2027-01-21T08:00"}
+    ]},
+    {"type":"Input.Toggle","id":"reminder","title":"Send SMS reminder 24h before","value":"true","valueOn":"true","valueOff":"false"},
+    {"type":"Input.Toggle","id":"telehealth","title":"Make this a telehealth visit if possible","value":"false","valueOn":"true","valueOff":"false"}
+  ],
+  "actions":[
+    {"type":"Action.Submit","title":"Continue","style":"positive"}
+  ]
+};
+
+const wellnessCard = {
+  "type":"AdaptiveCard","$schema":"http://adaptivecards.io/schemas/adaptive-card.json","version":"1.5",
+  "body":[
+    {"type":"Container","style":"emphasis","bleed":true,"items":[
+      {"type":"TextBlock","text":"Quick Wellness Check","weight":"Bolder","size":"Medium","color":"Accent"},
+      {"type":"TextBlock","text":"Takes ~30 seconds","isSubtle":true,"size":"Small","spacing":"None"}
+    ]},
+    {"type":"Input.ChoiceSet","id":"chest_pain","label":"Any chest pain in the last 7 days?","isRequired":true,"errorMessage":"Please answer","style":"compact","value":"none","choices":[
+      {"title":"None","value":"none"},
+      {"title":"Mild - manageable","value":"mild"},
+      {"title":"Moderate - noticeable","value":"moderate"},
+      {"title":"Severe - call me NOW","value":"severe"}
+    ]},
+    {"type":"Input.ChoiceSet","id":"med_adherence","label":"Taking medications as prescribed?","isRequired":true,"errorMessage":"Please answer","style":"compact","value":"yes","choices":[
+      {"title":"Yes, every day","value":"yes"},
+      {"title":"Missed a few doses","value":"partial"},
+      {"title":"Stopped one or more","value":"no"}
+    ]}
+  ],
+  "actions":[
+    {"type":"Action.Submit","title":"Continue to Review","style":"positive"}
+  ]
+};
+
+function buildReviewCard(wellness) {
+  const slot = window._slotChoice || {slotLabel: "—"};
+  const cpLabel = {none:"None ✓", mild:"Mild", moderate:"Moderate", severe:"Severe"}[wellness.chest_pain];
+  const adhLabel = {yes:"Yes, every day ✓", partial:"Missed a few doses", no:"Stopped one or more"}[wellness.med_adherence];
+  return {
+    "type":"AdaptiveCard","$schema":"http://adaptivecards.io/schemas/adaptive-card.json","version":"1.5",
+    "body":[
+      {"type":"Container","style":"emphasis","bleed":true,"items":[
+        {"type":"TextBlock","text":"Confirm Your Appointment","weight":"Bolder","size":"Medium","color":"Accent"},
+        {"type":"TextBlock","text":"Cardiology Follow-Up","isSubtle":true,"size":"Small","spacing":"None"}
+      ]},
+      {"type":"FactSet","facts":[
+        {"title":"When","value":slot.slotLabel},
+        {"title":"With","value":"Dr. Patel"},
+        {"title":"Where","value":"BR-Bluebonnet" + (slot.telehealthNote ? " · Telehealth" : "")},
+        {"title":"Reminder","value":slot.remindNote ? "SMS 24h before" : "None"},
+        {"title":"Chest pain","value":cpLabel},
+        {"title":"Adherence",  "value":adhLabel}
+      ]},
+      {"type":"Container","style":"good","items":[
+        {"type":"TextBlock","text":"Wellness responses will be shared with your care team before your visit.","size":"Small","wrap":true}
+      ]}
+    ],
+    "actions":[
+      {"type":"Action.Submit","title":"✓ Confirm","style":"positive","data":{"action":"confirm"}},
+      {"type":"Action.Submit","title":"Edit","data":{"action":"edit"}}
+    ]
+  };
+}
+
+const confirmedCard = {
+  "type":"AdaptiveCard","$schema":"http://adaptivecards.io/schemas/adaptive-card.json","version":"1.5",
+  "body":[
+    {"type":"Container","style":"good","bleed":true,"items":[
+      {"type":"ColumnSet","columns":[
+        {"type":"Column","width":"auto","items":[{"type":"TextBlock","text":"✓","size":"ExtraLarge","weight":"Bolder","color":"Good"}]},
+        {"type":"Column","width":"stretch","items":[
+          {"type":"TextBlock","text":"Confirmed","weight":"Bolder","size":"Medium","color":"Good","spacing":"None"},
+          {"type":"TextBlock","text":"Confirmation #CC-48721-FU","isSubtle":true,"size":"Small","spacing":"None"}
+        ]}
+      ]}
+    ]},
+    {"type":"TextBlock","text":"**What to expect:**","wrap":true,"spacing":"Medium"},
+    {"type":"TextBlock","text":"1. SMS reminder 24h before your visit\n2. Arrival paperwork emailed 48h before\n3. Bring your current medication list\n4. Wellness responses shared with Dr. Patel","wrap":true,"size":"Small"},
+    {"type":"Container","style":"attention","items":[
+      {"type":"TextBlock","text":"⚠️ If symptoms worsen before your visit, call your provider or 911. Don't wait for the follow-up.","size":"Small","wrap":true}
+    ]}
+  ]
+};
+
+// =================== INIT ===================
+step0_welcome();
+</script>
+</body>
+</html>
